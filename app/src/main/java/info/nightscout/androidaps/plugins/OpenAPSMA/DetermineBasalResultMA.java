@@ -6,21 +6,21 @@ import org.mozilla.javascript.NativeObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.Loop.APSResult;
 
 public class DetermineBasalResultMA extends APSResult {
-    private static Logger log = LoggerFactory.getLogger(DetermineBasalResultMA.class);
+    private static Logger log = LoggerFactory.getLogger(L.APS);
 
-    public JSONObject json = new JSONObject();
-    public double eventualBG;
-    public double snoozeBG;
-    public String mealAssist;
+    private double eventualBG;
+    private double snoozeBG;
+    private String mealAssist;
 
-    public DetermineBasalResultMA(NativeObject result, JSONObject j) {
+    DetermineBasalResultMA(NativeObject result, JSONObject j) {
         json = j;
         if (result.containsKey("error")) {
             reason = (String) result.get("error");
-            tempBasalReqested = false;
+            tempBasalRequested = false;
             rate = -1;
             duration = -1;
             mealAssist = "";
@@ -31,17 +31,17 @@ public class DetermineBasalResultMA extends APSResult {
             if (result.containsKey("rate")) {
                 rate = (Double) result.get("rate");
                 if (rate < 0d) rate = 0d;
-                tempBasalReqested = true;
+                tempBasalRequested = true;
             } else {
                 rate = -1;
-                tempBasalReqested = false;
+                tempBasalRequested = false;
             }
             if (result.containsKey("duration")) {
                 duration = ((Double) result.get("duration")).intValue();
                 //changeRequested as above
             } else {
                 duration = -1;
-                tempBasalReqested = false;
+                tempBasalRequested = false;
             }
             if (result.containsKey("mealAssist")) {
                 mealAssist = result.get("mealAssist").toString();
@@ -49,25 +49,14 @@ public class DetermineBasalResultMA extends APSResult {
         }
     }
 
-    public DetermineBasalResultMA() {
+    private DetermineBasalResultMA() {
     }
 
     @Override
     public DetermineBasalResultMA clone() {
         DetermineBasalResultMA newResult = new DetermineBasalResultMA();
-        newResult.reason = new String(reason);
-        newResult.rate = rate;
-        newResult.duration = duration;
-        newResult.tempBasalReqested = isChangeRequested();
-        newResult.rate = rate;
-        newResult.duration = duration;
-        newResult.tempBasalReqested = isChangeRequested();
+        doClone(newResult);
 
-        try {
-            newResult.json = new JSONObject(json.toString());
-        } catch (JSONException e) {
-            log.error("Unhandled exception", e);
-        }
         newResult.eventualBG = eventualBG;
         newResult.snoozeBG = snoozeBG;
         newResult.mealAssist = mealAssist;

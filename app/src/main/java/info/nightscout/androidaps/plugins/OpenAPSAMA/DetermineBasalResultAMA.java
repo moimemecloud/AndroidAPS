@@ -6,23 +6,23 @@ import org.mozilla.javascript.NativeObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-
+import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.Loop.APSResult;
+import info.nightscout.utils.DateUtil;
 
 public class DetermineBasalResultAMA extends APSResult {
-    private static Logger log = LoggerFactory.getLogger(DetermineBasalResultAMA.class);
+    private static Logger log = LoggerFactory.getLogger(L.APS);
 
-    public double eventualBG;
-    public double snoozeBG;
+    private double eventualBG;
+    private double snoozeBG;
 
-    public DetermineBasalResultAMA(NativeObject result, JSONObject j) {
+    DetermineBasalResultAMA(NativeObject result, JSONObject j) {
         this();
-        date = new Date();
+        date = DateUtil.now();
         json = j;
         if (result.containsKey("error")) {
             reason = result.get("error").toString();
-            tempBasalReqested = false;
+            tempBasalRequested = false;
             rate = -1;
             duration = -1;
         } else {
@@ -32,44 +32,33 @@ public class DetermineBasalResultAMA extends APSResult {
             if (result.containsKey("rate")) {
                 rate = (Double) result.get("rate");
                 if (rate < 0d) rate = 0d;
-                tempBasalReqested = true;
+                tempBasalRequested = true;
             } else {
                 rate = -1;
-                tempBasalReqested = false;
+                tempBasalRequested = false;
             }
             if (result.containsKey("duration")) {
                 duration = ((Double) result.get("duration")).intValue();
                 //changeRequested as above
             } else {
                 duration = -1;
-                tempBasalReqested = false;
+                tempBasalRequested = false;
             }
         }
         bolusRequested = false;
     }
 
-    public DetermineBasalResultAMA() {
+    private DetermineBasalResultAMA() {
         hasPredictions = true;
     }
 
     @Override
     public DetermineBasalResultAMA clone() {
         DetermineBasalResultAMA newResult = new DetermineBasalResultAMA();
-        newResult.reason = reason;
-        newResult.rate = rate;
-        newResult.duration = duration;
-        newResult.tempBasalReqested = tempBasalReqested;
-        newResult.rate = rate;
-        newResult.duration = duration;
+        doClone(newResult);
 
-        try {
-            newResult.json = new JSONObject(json.toString());
-        } catch (JSONException e) {
-            log.error("Unhandled exception", e);
-        }
         newResult.eventualBG = eventualBG;
         newResult.snoozeBG = snoozeBG;
-        newResult.date = date;
         return newResult;
     }
 

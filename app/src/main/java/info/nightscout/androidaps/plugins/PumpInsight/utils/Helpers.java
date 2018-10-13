@@ -7,6 +7,9 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -16,17 +19,17 @@ import java.util.Map;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.logging.L;
 
 /**
  * Created by jamorham on 24/01/2018.
- *
+ * <p>
  * Useful utility methods from xDrip+
- *
  */
 
 public class Helpers {
+    private static Logger log = LoggerFactory.getLogger(L.PUMP);
 
-    private static final String TAG = "InsightHelpers";
 
     private static final Map<String, Long> rateLimits = new HashMap<>();
     // singletons to avoid repeated allocation
@@ -37,7 +40,8 @@ public class Helpers {
     public static synchronized boolean ratelimit(String name, int seconds) {
         // check if over limit
         if ((rateLimits.containsKey(name)) && (tsl() - rateLimits.get(name) < (seconds * 1000))) {
-            Log.d(TAG, name + " rate limited: " + seconds + " seconds");
+            if (L.isEnabled(L.PUMP))
+                log.debug(name + " rate limited: " + seconds + " seconds");
             return false;
         }
         // not over limit
@@ -65,7 +69,7 @@ public class Helpers {
         } catch (PackageManager.NameNotFoundException e) {
             return false;
         } catch (Exception e) {
-            Log.wtf(TAG, "Exception trying to determine packages! " + e);
+            log.error("Exception trying to determine packages! " + e);
             return false;
         }
     }
@@ -96,30 +100,26 @@ public class Helpers {
     }
 
     public static String niceTimeScalar(long t) {
-        String unit = gs(R.string.second);
+        String unit = MainApp.gs(R.string.second);
         t = t / 1000;
         if (t > 59) {
-            unit = gs(R.string.minute);
+            unit = MainApp.gs(R.string.minute);
             t = t / 60;
             if (t > 59) {
-                unit = gs(R.string.hour);
+                unit = MainApp.gs(R.string.hour);
                 t = t / 60;
                 if (t > 24) {
-                    unit = gs(R.string.day);
+                    unit = MainApp.gs(R.string.day);
                     t = t / 24;
                     if (t > 28) {
-                        unit = gs(R.string.week);
+                        unit = MainApp.gs(R.string.week);
                         t = t / 7;
                     }
                 }
             }
         }
-        if (t != 1) unit = unit + gs(R.string.time_plural);
+        if (t != 1) unit = unit + MainApp.gs(R.string.time_plural);
         return qs((double) t, 0) + " " + unit;
-    }
-
-    private static String gs(int id) {
-        return MainApp.instance().getString(id);
     }
 
     public static String qs(double x, int digits) {
@@ -160,6 +160,31 @@ public class Helpers {
 
     public static String niceTimeScalarRedux(long t) {
         return niceTimeScalar(t).replaceFirst("^1 ", "");
+    }
+
+    public static String niceTimeScalarBrief(long t) {
+        // TODO i18n wont work for non-latin characterset
+        return niceTimeScalar(t).replaceFirst("([a-z])[a-z]*", "$1").replace(" ", "");
+    }
+
+    public static String hourMinuteString(long timestamp) {
+        return android.text.format.DateFormat.format("kk:mm", timestamp).toString();
+    }
+
+    public static String hourMinuteSecondString(long timestamp) {
+        return android.text.format.DateFormat.format("kk:mm:ss", timestamp).toString();
+    }
+
+    public static String dateTimeText(long timestamp) {
+        return android.text.format.DateFormat.format("yyyy-MM-dd kk:mm:ss", timestamp).toString();
+    }
+
+    public static String dateText(long timestamp) {
+        return android.text.format.DateFormat.format("yyyy-MM-dd", timestamp).toString();
+    }
+
+    public static String capitalize(String text) {
+        return text.substring(0, 1).toUpperCase() + text.substring(1).toLowerCase();
     }
 
     public static double roundDouble(double value, int places) {
